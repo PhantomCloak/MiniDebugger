@@ -280,7 +280,7 @@ private:
 		if (!GetThreadContext(mHandle->processInfo.hThread, &threadContext))
 		{
 			DWORD errCode = GetLastError();
-			printf("An Error occured during the getting context of %d in debugee error code %d", (DWORD)&mHandle->processInfo.hThread & errCode);
+			printf("An Error occured during the getting context of %d in debuggee error code %d", (DWORD)&mHandle->processInfo.hThread & errCode);
 		}
 
 		threadContext.Eip--;
@@ -289,13 +289,13 @@ private:
 		if (!SetThreadContext(mHandle->processInfo.hThread, &threadContext))
 		{
 			DWORD errCode = GetLastError();
-			printf("An Error occured during the setting context of %d in debugee error code %d", (DWORD)&mHandle->processInfo.hThread & errCode);
+			printf("An Error occured during the setting context of %d in debuggee error code %d", (DWORD)&mHandle->processInfo.hThread & errCode);
 		}
 
 		if (!WriteProcessMemory(mHandle->processInfo.hProcess, addr, (LPCVOID)&orgOpCode, sizeof(CHAR), NULL))
 		{
 			DWORD errCode = GetLastError();
-			printf("An Error occured during the writing original op code to %d in debugee error code %d", (DWORD)&addr & errCode);
+			printf("An Error occured during the writing original op code to %d in debuggee error code %d", (DWORD)&addr & errCode);
 		}
 
 		if (!VirtualProtectEx(mHandle->processInfo.hProcess, addr, sizeof(CHAR), orgProtect, &oldProtect))
@@ -481,6 +481,16 @@ private:
 						if (instance->exceptionCallback != NULL)
 							instance->exceptionCallback(exception, mHandle);
 					}
+
+					// There are cases where OS ignores the dwContinueStatus,
+					// and executes the process in its own way.
+					// For first chance exceptions, this parameter is not-important
+					// but still we are saying that we have NOT handled this event.
+
+					// Changing this to DBG_CONTINUE (for 1st chance exception also),
+					// may cause same debugging event to occur continously.
+					// In short, this debugger does not handle debug exception events
+					// efficiently, and let's keep it simple for a while!
 					dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
 				}
 
